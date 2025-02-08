@@ -14,7 +14,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("SIM7600G-H Modem Tool")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+76f8b5d4c4e2f0cd0938413e199f48ffeaf78f58")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+693471b85e0548e207c2efcbd370c7a71f40dbdb")]
 [assembly: System.Reflection.AssemblyProductAttribute("SIM7600G-H Modem Tool")]
 [assembly: System.Reflection.AssemblyTitleAttribute("SIM7600G-H Modem Tool")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]
