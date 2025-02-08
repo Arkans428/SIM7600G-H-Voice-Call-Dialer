@@ -1,20 +1,16 @@
 # SIM7600G-H Modem Tool
 
-This project contains C# classes designed to manage audio streaming and serial communication with the SIMCOM SIM7600G-H modem. The modem is typically used in embedded systems or IoT devices for telecommunication and remote access.
+This project contains C# classes designed to manage audio streaming and serial communication with the SIMCOM SIM7600G-H modem.
 
 ## Overview
 
-The code in this project is split into three classes. Two are meant for testing, and the third contains the working code for this project:
-
-1. **`AudioDeviceManager`**: Lists available audio devices and their input/output channel capabilities.
-2. **`AudioStreamer`**: Captures audio input and plays it back through an output device in real-time (loopback).
-3. **`SerialAudioPhone`**: Manages serial communication with the SIMCOM SIM7600G-H modem, handling AT commands and audio streaming for phone calls. It now also includes the ability to send DTMF tones during a call and platform-specific support for both Windows and Linux.
+**`SerialAudioPhone`**: Manages serial communication with the SIMCOM SIM7600G-H modem, handling AT commands and audio streaming for phone calls. It now also includes the ability to send DTMF tones during a call and platform-specific support for both Windows and Linux.
 
 ## Key Features
 
-- **Audio Device Management**: Easily list and select audio devices for further processing.
-- **Real-Time Audio Loopback**: Test audio input and output devices using real-time streaming with adjustable sample rate and channels.
 - **SIMCOM SIM7600G-H Modem Integration**: Send AT commands over the AT Command Port and transmit/receive audio data over the serial audio port. The program can send DTMF tones during an active call, including the standard tones (0-9, *, #) and extended tones (A-D). The class also has methods to send, read, and delete SMS messages.
+- **DTMF Generation**: Sends all DTMF Tones from 0-9 and A-D.
+- **Send and Receive SMS**: Still a work in progress. 
 
 ## Hardware Requirements
 
