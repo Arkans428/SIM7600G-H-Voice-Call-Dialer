@@ -52,7 +52,7 @@ The `SerialAudioPhone` class is designed specifically for working with the SIMCO
 - **NAudio**: Uses NAudio for audio input/output.
 - **Improved DTMF Tone Support**: The program now properly detects and sends all DTMF tones (including `*` and `#`) regardless of whether they are entered using Shift + 8/3 or the number pad.
 - **SMS Management**: Send, read, and delete SMS messages using the modem’s serial port.
-- **Automatic Port Detection**: The program automatically finds the correct serial ports for AT commands and audio, whether running on Windows or Linux.
+- **Automatic Port Detection**: The program automatically finds the correct serial ports for AT commands and audio.
 
 #### Usage Example:
 ```csharp
