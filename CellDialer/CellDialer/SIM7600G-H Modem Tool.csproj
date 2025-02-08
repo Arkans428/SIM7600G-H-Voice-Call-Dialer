@@ -17,7 +17,16 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="Alsa.Net" Version="1.0.8" />
+    <Compile Remove="AudioDeviceManager.cs" />
+    <Compile Remove="AudioStreamer.cs" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Include="AudioDeviceManager.cs" />
+    <None Include="AudioStreamer.cs" />
+  </ItemGroup>
+
+  <ItemGroup>
     <PackageReference Include="NAudio.Wasapi" Version="2.2.1" />
     <PackageReference Include="NAudio.WinMM" Version="2.2.1" />
     <PackageReference Include="System.IO.Ports" Version="8.0.0" />

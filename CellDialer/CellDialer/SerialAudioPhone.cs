@@ -25,14 +25,10 @@ SOFTWARE.
 using System;
 using System.IO.Ports;
 using System.Management;
+using System.Runtime.Versioning;
 using System.Text.RegularExpressions;
 
-#if WINDOWS
 using NAudio.Wave;
-#elif LINUX
-using Alsa.Net;
-using Alsa.Net.Audio;
-#endif
 
 namespace ModemTool
 {
@@ -44,15 +40,10 @@ namespace ModemTool
         private SerialPort? atPort; // Serial port for sending AT commands
         private SerialPort? audioPort; // Serial port for transmitting audio data
 
-#if WINDOWS
+
         private WaveInEvent? waveIn; // Handles capturing audio input (Windows)
         private WaveOutEvent? waveOut; // Handles playing audio output (Windows)
         private BufferedWaveProvider? buffer; // Buffers the captured audio data (Windows)
-#elif LINUX
-        private AudioCapture? waveIn; // Handles capturing audio input (Linux)
-        private AudioPlayback? waveOut; // Handles playing audio output (Linux)
-        private RingBuffer? buffer; // Buffers the captured audio data (Linux)
-#endif
 
         private Thread? smsMonitoringThread; // Background thread for monitoring incoming SMS messages
         private bool isCallActive; // Flag indicating whether a call is currently active
@@ -62,22 +53,21 @@ namespace ModemTool
         private float echoSuppressionFactor = 0.5f; // Echo suppression level (range 0 to 1)
         private bool verboseOutput = false; // Flag to control verbose logging for debugging
 
-        // Device identifiers for the AT port and the Audio port on different platforms
-        private const string WindowsAtPortDeviceId = "USB\\VID_1E0E&PID_9001&MI_02";
-        private const string WindowsAudioPortDeviceId = "USB\\VID_1E0E&PID_9001&MI_04";
-        private const string LinuxVendorId = "1e0e";
-        private const string LinuxProductId = "9001";
+        // Device identifiers for the AT port and the Audio port on Windows.
+        private const string WindowsAtPortDeviceId = "USB\\VID_1E0E&PID_9005&MI_02";
+        private const string WindowsAudioPortDeviceId = "USB\\VID_1E0E&PID_9005&MI_04";
 
         #endregion
 
         #region Constructor
+        [SupportedOSPlatform("windows")]
         public SerialAudioPhone(int baudRate = 115200, int sampleRate = 8000, int channels = 1, bool verbose = false)
         {
             // Enable verbose output if requested
             verboseOutput = verbose;
 
             // Locate the serial ports based on their device IDs
-            var (atPortName, audioPortName) = FindSerialPorts();
+            var (atPortName, audioPortName) = FindPortsWindows();
 
             // If either port is not found, throw an exception
             if (atPortName is null || audioPortName is null)
@@ -89,7 +79,6 @@ namespace ModemTool
             atPort = new SerialPort(atPortName, baudRate);
             audioPort = new SerialPort(audioPortName, baudRate);
 
-#if WINDOWS
             // Configure the input device for capturing audio (microphone) on Windows
             waveIn = new WaveInEvent
             {
@@ -130,27 +119,6 @@ namespace ModemTool
 
             waveOut.Init(buffer);
 
-#elif LINUX
-            // Configure audio input and output for Linux using Alsa.Net
-            waveIn = new AudioCapture(new AudioDevice(), sampleRate, channels);
-            waveOut = new AudioPlayback(new AudioDevice(), sampleRate, channels);
-
-            buffer = new RingBuffer(4096); // Adjust buffer size as needed
-
-            waveIn.DataAvailable += (sender, e) =>
-            {
-                try
-                {
-                    float adjustedVolume = waveOut.Playing ? echoSuppressionFactor : 1.0f;
-                    byte[] adjustedBuffer = AdjustAudioVolume(e.Buffer, e.BytesRecorded, adjustedVolume);
-                    audioPort.Write(adjustedBuffer, 0, e.BytesRecorded);
-                }
-                catch (Exception ex)
-                {
-                    Console.WriteLine("Audio error: " + ex.Message);
-                }
-            };
-#endif
 
             isCallActive = false;
         }
@@ -159,31 +127,8 @@ namespace ModemTool
 
         #region Platform-Specific Methods for Serial Port Detection
 
-        // Detect and return serial ports for the AT and Audio ports based on the operating system
-        private (string? AtPort, string? AudioPort) FindSerialPorts()
-        {
-            if (IsWindows())
-            {
-                return FindPortsWindows();
-            }
-            else if (IsLinux())
-            {
-                return FindPortsLinux();
-            }
-            else
-            {
-                Console.WriteLine("Unsupported operating system.");
-                return (null, null);
-            }
-        }
-
-        // Check if the current platform is Windows
-        private bool IsWindows() => Environment.OSVersion.Platform == PlatformID.Win32NT;
-
-        // Check if the current platform is Linux or macOS
-        private bool IsLinux() => Environment.OSVersion.Platform == PlatformID.Unix || Environment.OSVersion.Platform == PlatformID.MacOSX;
-
         // Find the appropriate serial ports for Windows systems
+        [SupportedOSPlatform("windows")]
         private (string? AtPort, string? AudioPort) FindPortsWindows()
         {
             string? atPort = null;
@@ -218,70 +163,7 @@ namespace ModemTool
             }
 
             return (atPort, audioPort);
-        }
-
-        // Find the appropriate serial ports for Linux systems
-        private (string? AtPort, string? AudioPort) FindPortsLinux()
-        {
-            string? atPort = null;
-            string? audioPort = null;
-
-            try
-            {
-                // List all top-level USB device folders (those without a colon in their name)
-                var devices = System.IO.Directory.GetDirectories("/sys/bus/usb/devices/")
-                    .Where(d => !d.Contains(":")); // Filter out subfolders like ":1.2", ":1.4"
-
-                foreach (var device in devices)
-                {
-                    // Check for matching vendor and product IDs
-                    if (System.IO.File.Exists($"{device}/idVendor") && System.IO.File.Exists($"{device}/idProduct"))
-                    {
-                        string vendorId = System.IO.File.ReadAllText($"{device}/idVendor").Trim();
-                        string productId = System.IO.File.ReadAllText($"{device}/idProduct").Trim();
-
-                        if (vendorId == LinuxVendorId && productId == LinuxProductId)
-                        {
-                            // Look for the specific child folders ending in ":1.2" and ":1.4"
-                            var interfaceFolders = System.IO.Directory.GetDirectories(device)
-                                .Where(f => f.EndsWith(":1.2") || f.EndsWith(":1.4"));
-
-                            foreach (var interfaceFolder in interfaceFolders)
-                            {
-                                // Look for a ttyUSB* device name in the folder
-                                var ttyDevice = System.IO.Directory.GetDirectories(interfaceFolder, "ttyUSB*").FirstOrDefault();
-                                if (ttyDevice != null)
-                                {
-                                    // Extract the ttyUSB* name (e.g., ttyUSB2, ttyUSB4)
-                                    string ttyName = System.IO.Path.GetFileName(ttyDevice);
-
-                                    // Check if this device exists in the /dev/ folder
-                                    string devPath = $"/dev/{ttyName}";
-                                    if (System.IO.File.Exists(devPath))
-                                    {
-                                        // Determine if this is the AT port or Audio port based on the folder name
-                                        if (interfaceFolder.EndsWith(":1.2"))
-                                        {
-                                            atPort = devPath;
-                                        }
-                                        else if (interfaceFolder.EndsWith(":1.4"))
-                                        {
-                                            audioPort = devPath;
-                                        }
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine($"Error detecting ports on Linux: {ex.Message}");
-            }
-
-            return (atPort, audioPort);
-        }
+        }       
 
         #endregion
 
@@ -336,13 +218,8 @@ namespace ModemTool
                 // Enable audio transmission over the serial port
                 SendCommand("AT+CPCMREG=1");
 
-#if WINDOWS
                 waveIn?.StartRecording(); // Start capturing audio from the microphone
                 waveOut?.Play(); // Start playing received audio
-#elif LINUX
-                waveIn.Start();
-                waveOut.Start();
-#endif
 
                 // Start a thread to monitor keyboard input for user interaction
                 Thread inputThread = new Thread(MonitorKeyboardInput)
@@ -374,7 +251,6 @@ namespace ModemTool
                             audioPort.Read(audioData, 0, audioData.Length);
 
                             // Prevent buffer overflow by limiting the amount of buffered audio
-#if WINDOWS
                             if (buffer != null && buffer.BufferedDuration.TotalMilliseconds < 100)
                             {
                                 buffer.AddSamples(audioData, 0, audioData.Length); // Add received audio to the playback buffer
@@ -383,16 +259,6 @@ namespace ModemTool
                             {
                                 if (verboseOutput) Console.WriteLine("Skipping audio data to avoid buffer overflow.");
                             }
-#elif LINUX
-                            if (buffer != null && buffer.AvailableWrite > audioData.Length)
-                            {
-                                buffer.Write(audioData, 0, audioData.Length); // Add received audio to the playback buffer
-                            }
-                            else
-                            {
-                                if (verboseOutput) Console.WriteLine("Skipping audio data to avoid buffer overflow.");
-                            }
-#endif
                         }
                     }
                     catch (IOException ex)
@@ -505,13 +371,9 @@ namespace ModemTool
                 SendCommand("AT+CHUP"); // Hang up the call
                 SendCommand("AT+CPCMREG=0,1"); // Disable the audio channel on the modem
 
-#if WINDOWS
+
                 waveIn?.StopRecording(); // Stop capturing audio (Windows)
                 waveOut?.Stop(); // Stop playing audio (Windows)
-#elif LINUX
-                waveIn.Stop(); // Stop capturing audio (Linux)
-                waveOut.Stop(); // Stop playing audio (Linux)
-#endif
 
                 if (verboseOutput) Console.WriteLine("Call ended.");
             }
@@ -783,4 +645,3 @@ namespace ModemTool
         #endregion
     }
 }
-

@@ -1,20 +1,20 @@
 {
   "format": 1,
   "restore": {
-    "C:\\Users\\Kiern\\Desktop\\SIM7600G-H-Serial-Audio-V0.2\\CellDialer\\CellDialer\\SIM7600G-H Modem Tool.csproj": {}
+    "C:\\Users\\Kiern\\source\\repos\\SIM7600G-H-Serial-Audio\\CellDialer\\CellDialer\\SIM7600G-H Modem Tool.csproj": {}
   },
   "projects": {
-    "C:\\Users\\Kiern\\Desktop\\SIM7600G-H-Serial-Audio-V0.2\\CellDialer\\CellDialer\\SIM7600G-H Modem Tool.csproj": {
+    "C:\\Users\\Kiern\\source\\repos\\SIM7600G-H-Serial-Audio\\CellDialer\\CellDialer\\SIM7600G-H Modem Tool.csproj": {
       "version": "1.0.0",
       "restore": {
-        "projectUniqueName": "C:\\Users\\Kiern\\Desktop\\SIM7600G-H-Serial-Audio-V0.2\\CellDialer\\CellDialer\\SIM7600G-H Modem Tool.csproj",
+        "projectUniqueName": "C:\\Users\\Kiern\\source\\repos\\SIM7600G-H-Serial-Audio\\CellDialer\\CellDialer\\SIM7600G-H Modem Tool.csproj",
         "projectName": "SIM7600G-H Modem Tool",
-        "projectPath": "C:\\Users\\Kiern\\Desktop\\SIM7600G-H-Serial-Audio-V0.2\\CellDialer\\CellDialer\\SIM7600G-H Modem Tool.csproj",
+        "projectPath": "C:\\Users\\Kiern\\source\\repos\\SIM7600G-H-Serial-Audio\\CellDialer\\CellDialer\\SIM7600G-H Modem Tool.csproj",
         "packagesPath": "C:\\Users\\Kiern\\.nuget\\packages\\",
-        "outputPath": "C:\\Users\\Kiern\\Desktop\\SIM7600G-H-Serial-Audio-V0.2\\CellDialer\\CellDialer\\obj\\",
+        "outputPath": "C:\\Users\\Kiern\\source\\repos\\SIM7600G-H-Serial-Audio\\CellDialer\\CellDialer\\obj\\",
         "projectStyle": "PackageReference",
         "fallbackFolders": [
-          "D:\\Program Files (x86)\\Microsoft Visual Studio\\Shared\\NuGetPackages"
+          "C:\\Program Files (x86)\\Microsoft Visual Studio\\Shared\\NuGetPackages"
         ],
         "configFilePaths": [
           "C:\\Users\\Kiern\\AppData\\Roaming\\NuGet\\NuGet.Config",
@@ -44,16 +44,13 @@
           "enableAudit": "true",
           "auditLevel": "low",
           "auditMode": "direct"
-        }
+        },
+        "SdkAnalysisLevel": "9.0.100"
       },
       "frameworks": {
         "net8.0": {
           "targetAlias": "net8.0",
           "dependencies": {
-            "Alsa.Net": {
-              "target": "Package",
-              "version": "[1.0.8, )"
-            },
             "NAudio.Wasapi": {
               "target": "Package",
               "version": "[2.2.1, )"
@@ -87,7 +84,7 @@
               "privateAssets": "all"
             }
           },
-          "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\8.0.400/PortableRuntimeIdentifierGraph.json"
+          "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\9.0.102/PortableRuntimeIdentifierGraph.json"
         }
       }
     }

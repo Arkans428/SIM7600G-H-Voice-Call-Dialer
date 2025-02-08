@@ -1,9 +1,11 @@
 using System;
+using System.Runtime.Versioning;
 
 namespace ModemTool
 {
     class Program
     {
+        [SupportedOSPlatform("windows")]
         static void Main(string[] args)
         {
             SerialAudioPhone phone;
@@ -32,15 +34,13 @@ namespace ModemTool
                 {
                     // Display menu options to the user
                     Console.WriteLine("======SIM7600G-H Modem Tool======");
-                    Console.WriteLine("Choose an option:");                    
-                    Console.WriteLine("1. List System Audio Devices");
-                    Console.WriteLine("2. Test Audio Streaming (Loopback)");                    
-                    Console.WriteLine("3. Serial Audio Phone Call");
-                    Console.WriteLine("4. Send Text Message");
-                    Console.WriteLine("5. Read Text Messages");
-                    Console.WriteLine("6. Delete a Specific SMS");
-                    Console.WriteLine("7. Delete All SMS Messages");
-                    Console.WriteLine("8. Exit");
+                    Console.WriteLine("Choose an option:");                  
+                    Console.WriteLine("1. Serial Audio Phone Call");
+                    Console.WriteLine("2. Send Text Message");
+                    Console.WriteLine("3. Read Text Messages");
+                    Console.WriteLine("4. Delete a Specific SMS");
+                    Console.WriteLine("5. Delete All SMS Messages");
+                    Console.WriteLine("6. Exit");
                     Console.Write("Enter your choice: ");
 
                     // Read user input
@@ -50,27 +50,21 @@ namespace ModemTool
                     switch (choice)
                     {
                         case "1":
-                            TestAudioDeviceManager();
+                            SerialAudioPhoneCall(phone);
                             break;
                         case "2":
-                            TestAudioStreamer();
-                            break;
-                        case "3":
-                            TestSerialAudioPhone(phone);
-                            break;
-                        case "4":
                             SendTextMessage(phone);
                             break;
-                        case "5":
+                        case "3":
                             ReadTextMessages(phone);
                             break;
-                        case "6":
+                        case "4":
                             DeleteSpecificSms(phone);
                             break;
-                        case "7":
+                        case "5":
                             DeleteAllSmsMessages(phone);
                             break;
-                        case "8":
+                        case "6":
                             // Properly dispose of resources before exiting
                             phone.Dispose();
                             Console.WriteLine("Exiting...");
@@ -88,61 +82,8 @@ namespace ModemTool
             }
         }
 
-        // Method to list available audio devices
-        static void TestAudioDeviceManager()
-        {
-            try
-            {
-                var manager = new AudioDeviceManager();
-                manager.ListDevices(); // Display the list of audio devices
-            }
-            catch (Exception ex)
-            {
-                // Handle errors that may occur when listing audio devices
-                Console.WriteLine("Error while listing audio devices: " + ex.Message);
-            }
-        }
-
-        // Method to test audio streaming (loopback)
-        static void TestAudioStreamer()
-        {
-            try
-            {
-                // Prompt the user to enter the input device index
-                Console.Write("Enter input device index: ");
-                if (!int.TryParse(Console.ReadLine(), out int inputDeviceIndex)) // Validate user input
-                {
-                    Console.WriteLine("Invalid input device index.");
-                    return; // Exit the method if the input is invalid
-                }
-
-                // Prompt the user to enter the output device index
-                Console.Write("Enter output device index: ");
-                if (!int.TryParse(Console.ReadLine(), out int outputDeviceIndex)) // Validate user input
-                {
-                    Console.WriteLine("Invalid output device index.");
-                    return; // Exit the method if the input is invalid
-                }
-
-                // Initialize the audio streamer with the specified input and output devices
-                var streamer = new AudioStreamer(inputDeviceIndex, outputDeviceIndex);
-                streamer.Start(); // Start audio streaming
-
-                Console.WriteLine("Audio streaming started. Press any key to stop...");
-                Console.ReadKey(); // Wait for the user to press a key to stop streaming
-
-                streamer.Stop(); // Stop audio streaming
-                Console.WriteLine("Audio streaming stopped.");
-            }
-            catch (Exception ex)
-            {
-                // Handle errors that may occur during audio streaming
-                Console.WriteLine("Error during audio streaming: " + ex.Message);
-            }
-        }
-
         // Method to test making a phone call using the serial audio phone functionality
-        static void TestSerialAudioPhone(SerialAudioPhone phone)
+        static void SerialAudioPhoneCall(SerialAudioPhone phone)
         {
             try
             {
