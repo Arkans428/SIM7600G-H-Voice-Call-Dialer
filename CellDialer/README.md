@@ -9,6 +9,8 @@ This project contains C# classes designed to manage audio streaming and serial c
 ## Key Features
 
 - **SIMCOM SIM7600G-H Modem Integration**: Send AT commands over the AT Command Port and transmit/receive audio data over the serial audio port. The program can send DTMF tones during an active call, including the standard tones (0-9, *, #) and extended tones (A-D). The class also has methods to send, read, and delete SMS messages.
+- **DTMF Generation**: Sends all DTMF Tones from 0-9 and A-D.
+- **Send and Receive SMS**: Still a work in progress. 
 
 ## Hardware Requirements
 
