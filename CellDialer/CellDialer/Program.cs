@@ -1,7 +1,7 @@
 using System;
 using System.Runtime.Versioning;
 
-namespace ModemTool
+namespace ModemDialer
 {
     class Program
     {
@@ -24,9 +24,6 @@ namespace ModemTool
                 Console.ReadKey();
                 return; // Exit the program since initialization failed
             }
-
-            // Start SMS monitoring as soon as the program starts
-            phone.StartSmsMonitoring();
             
             try
             {
@@ -36,11 +33,7 @@ namespace ModemTool
                     Console.WriteLine("======SIM7600G-H Modem Tool======");
                     Console.WriteLine("Choose an option:");                  
                     Console.WriteLine("1. Serial Audio Phone Call");
-                    Console.WriteLine("2. Send Text Message");
-                    Console.WriteLine("3. Read Text Messages");
-                    Console.WriteLine("4. Delete a Specific SMS");
-                    Console.WriteLine("5. Delete All SMS Messages");
-                    Console.WriteLine("6. Exit");
+                    Console.WriteLine("2. Exit");
                     Console.Write("Enter your choice: ");
 
                     // Read user input
@@ -53,18 +46,6 @@ namespace ModemTool
                             SerialAudioPhoneCall(phone);
                             break;
                         case "2":
-                            SendTextMessage(phone);
-                            break;
-                        case "3":
-                            ReadTextMessages(phone);
-                            break;
-                        case "4":
-                            DeleteSpecificSms(phone);
-                            break;
-                        case "5":
-                            DeleteAllSmsMessages(phone);
-                            break;
-                        case "6":
                             // Properly dispose of resources before exiting
                             phone.Dispose();
                             Console.WriteLine("Exiting...");
@@ -107,7 +88,7 @@ namespace ModemTool
                 Console.WriteLine("Error during phone call: " + ex.Message);
             }
         }
-
+        /*
         // Method to send a text message
         static void SendTextMessage(SerialAudioPhone phone)
         {
@@ -205,6 +186,6 @@ namespace ModemTool
                 // Handle errors that may occur when deleting all SMS messages
                 Console.WriteLine($"Error deleting all SMS messages: {ex.Message}");
             }
-        }
+        }*/
     }
 }
