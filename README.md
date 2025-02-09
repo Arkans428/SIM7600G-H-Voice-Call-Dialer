@@ -20,7 +20,7 @@ This project is designed for use with the **SIMCOM SIM7600G-H** modem. It assume
 
 If you encounter errors stating it can't find the serial ports, you may need to change your USB PID configuration of the modem. Open the AT Command or modem port if available and enter:
 ```bash
-AT+CUSBPIDSWITCH=9001,1,1
+AT+CUSBPIDSWITCH=9005,1,1
 ```
 The modem will reboot automatically after receiving the command, and you should see both ports now.
 
