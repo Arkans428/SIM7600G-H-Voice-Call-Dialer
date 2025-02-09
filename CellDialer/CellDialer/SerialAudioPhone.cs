@@ -22,36 +22,30 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 */
 
-using System;
 using System.IO.Ports;
 using System.Management;
 using System.Runtime.Versioning;
-using System.Text.RegularExpressions;
-
 using NAudio.Wave;
 
-namespace ModemTool
+namespace ModemDialer
 {
     public class SerialAudioPhone : IDisposable
     {
         #region Fields and Configuration
 
         // Serial ports for AT commands and audio data
-        private SerialPort? atPort; // Serial port for sending AT commands
-        private SerialPort? audioPort; // Serial port for transmitting audio data
+        private readonly SerialPort? atPort; // Serial port for sending AT commands
+        private readonly SerialPort? audioPort; // Serial port for asyncronous audio data
 
+        private readonly WaveInEvent? waveIn; // Handles capturing audio input (Windows)
+        private readonly WaveOutEvent? waveOut; // Handles playing audio output (Windows)
+        private readonly BufferedWaveProvider? buffer; // Buffers the captured audio data (Windows)
 
-        private WaveInEvent? waveIn; // Handles capturing audio input (Windows)
-        private WaveOutEvent? waveOut; // Handles playing audio output (Windows)
-        private BufferedWaveProvider? buffer; // Buffers the captured audio data (Windows)
-
-        private Thread? smsMonitoringThread; // Background thread for monitoring incoming SMS messages
         private bool isCallActive; // Flag indicating whether a call is currently active
-        private bool isSmsMonitoringActive; // Flag indicating whether SMS monitoring is active
         private bool disposed = false; // Tracks whether the object has been disposed
-        private bool isEchoSuppressionEnabled = true; // Flag to enable/disable echo suppression
-        private float echoSuppressionFactor = 0.5f; // Echo suppression level (range 0 to 1)
-        private bool verboseOutput = false; // Flag to control verbose logging for debugging
+        // private bool isEchoSuppressionEnabled = true; // Flag to enable/disable echo suppression (Not Implemeted)
+        private readonly float echoSuppressionFactor = 0.5f; // Echo suppression level (range 0 to 1)
+        private readonly bool verboseOutput = false; // Flag to control verbose logging for debugging
 
         // Device identifiers for the AT port and the Audio port on Windows.
         private const string WindowsAtPortDeviceId = "USB\\VID_1E0E&PID_9005&MI_02";
@@ -129,7 +123,7 @@ namespace ModemTool
 
         // Find the appropriate serial ports for Windows systems
         [SupportedOSPlatform("windows")]
-        private (string? AtPort, string? AudioPort) FindPortsWindows()
+        private static (string? AtPort, string? AudioPort) FindPortsWindows()
         {
             string? atPort = null;
             string? audioPort = null;
@@ -137,25 +131,25 @@ namespace ModemTool
             try
             {
                 // Query the system for USB devices using WMI (Windows Management Instrumentation)
-                using (var searcher = new ManagementObjectSearcher("SELECT * FROM Win32_PnPEntity"))
+                using var searcher = new ManagementObjectSearcher("SELECT * FROM Win32_PnPEntity");
+                
+                foreach (var device in searcher.Get())
                 {
-                    foreach (var device in searcher.Get())
+                    string? deviceId = device["DeviceID"]?.ToString();
+                    string? name = device["Name"]?.ToString();
+                    if (deviceId != null && name != null)
                     {
-                        string? deviceId = device["DeviceID"]?.ToString();
-                        string? name = device["Name"]?.ToString();
-                        if (deviceId != null && name != null)
+                        if (deviceId.Contains(WindowsAtPortDeviceId))
                         {
-                            if (deviceId.Contains(WindowsAtPortDeviceId))
-                            {
-                                atPort = name.Split('(').LastOrDefault()?.Replace(")", ""); // Extract COM port name for AT port
-                            }
-                            else if (deviceId.Contains(WindowsAudioPortDeviceId))
-                            {
-                                audioPort = name.Split('(').LastOrDefault()?.Replace(")", ""); // Extract COM port name for Audio port
-                            }
+                            atPort = name.Split('(').LastOrDefault()?.Replace(")", ""); // Extract COM port name for AT port
+                        }
+                        else if (deviceId.Contains(WindowsAudioPortDeviceId))
+                        {
+                            audioPort = name.Split('(').LastOrDefault()?.Replace(")", ""); // Extract COM port name for Audio port
                         }
                     }
                 }
+                
             }
             catch (Exception ex)
             {
@@ -207,11 +201,11 @@ namespace ModemTool
                 SendCommand("AT+CGREG=0"); // Disable automatic gain control
                 SendCommand("AT+CECM=7");
                 SendCommand("AT+CECWB=0x0800");
-                SendCommand("AT+CMICGAIN=3"); // Set microphone gain
+                SendCommand("AT+CMICGAIN=5"); // Set microphone gain
                 SendCommand("AT+COUTGAIN=4"); // Set output gain
                 SendCommand("AT+CNSN=0x1000");
 
-                // Send basic AT command to ensure modem readiness and dial the phone number
+                // Send basic AT command to ensure modem readiness and then dial the phone number
                 SendCommand("AT");
                 SendCommand($"ATD{phoneNumber};"); // Dial the phone number
 
@@ -222,7 +216,7 @@ namespace ModemTool
                 waveOut?.Play(); // Start playing received audio
 
                 // Start a thread to monitor keyboard input for user interaction
-                Thread inputThread = new Thread(MonitorKeyboardInput)
+                Thread inputThread = new(MonitorKeyboardInput)
                 {
                     Priority = ThreadPriority.Highest
                 };
@@ -294,7 +288,7 @@ namespace ModemTool
         public void SendDtmfTone(char tone)
         {
             // Validate that the tone is a valid DTMF character (0-9, *, #, A-D)
-            if ("0123456789*#ABCD".IndexOf(tone) >= 0)
+            if ("0123456789*#ABCD".Contains(tone))
             {
                 // Send the AT command to generate the specified DTMF tone
                 SendCommand($"AT+VTS={tone}");
@@ -385,163 +379,6 @@ namespace ModemTool
 
         #endregion
 
-        #region SMS Management Methods
-
-        // Send a text message to a specified phone number
-        public void SendTextMessage(string phoneNumber, string message)
-        {
-            try
-            {
-                if (atPort?.IsOpen == false)
-                {
-                    atPort.Open(); // Ensure the AT port is open
-                }
-
-                SendCommand("AT+CMGF=1"); // Set SMS mode to text mode
-                SendCommand($"AT+CMGS=\"{phoneNumber}\""); // Specify the recipient
-
-                atPort?.Write($"{message}{char.ConvertFromUtf32(26)}"); // Send the message followed by Ctrl+Z (end of message)
-                if (verboseOutput) Console.WriteLine($"Message sent to {phoneNumber}: {message}");
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine($"Error sending text message: {ex.Message}");
-            }
-        }
-
-        // Read and display all stored SMS messages
-        public void ReadTextMessages()
-        {
-            try
-            {
-                if (atPort?.IsOpen == false)
-                {
-                    atPort.Open(); // Ensure the AT port is open
-                }
-
-                SendCommand("AT+CMGF=1"); // Set SMS mode to text mode
-                SendCommand("AT+CMGL=\"ALL\""); // Retrieve all stored messages
-
-                if (atPort != null && atPort.BytesToRead > 0)
-                {
-                    string response = atPort.ReadExisting();
-                    if (verboseOutput) Console.WriteLine("Received Messages:");
-                    Console.WriteLine(response);
-                }
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine($"Error reading text messages: {ex.Message}");
-            }
-        }
-
-        // Start monitoring for incoming SMS messages in the background
-        public void StartSmsMonitoring()
-        {
-            if (atPort?.IsOpen == false)
-            {
-                atPort.Open(); // Ensure the AT port is open
-            }
-
-            isSmsMonitoringActive = true;
-            smsMonitoringThread = new Thread(MonitorIncomingSms)
-            {
-                IsBackground = true // Run as a background thread
-            };
-            smsMonitoringThread.Start();
-        }
-
-        // Monitor and handle incoming SMS messages
-        private void MonitorIncomingSms()
-        {
-            try
-            {
-                SendCommand("AT+CNMI=2,1,0,0,0"); // Enable new message notifications
-
-                while (isSmsMonitoringActive)
-                {
-                    if (atPort != null && atPort.BytesToRead > 0)
-                    {
-                        string response = atPort.ReadExisting();
-
-                        // Check for SMS notifications
-                        if (response.Contains("+CMTI:"))
-                        {
-                            // Extract the message index from the notification
-                            var match = Regex.Match(response, @"\+CMTI: "".*?"",(\d+)");
-                            if (match.Success)
-                            {
-                                int messageIndex = int.Parse(match.Groups[1].Value);
-
-                                // Read the message content
-                                SendCommand($"AT+CMGR={messageIndex}");
-                                string messageContent = atPort.ReadExisting();
-
-                                if (verboseOutput) Console.WriteLine("New SMS Received:");
-                                Console.WriteLine(messageContent);
-
-                                // Optionally delete the message after reading
-                                SendCommand($"AT+CMGD={messageIndex}");
-                            }
-                        }
-                    }
-
-                    Thread.Sleep(500); // Sleep to reduce CPU usage
-                }
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine($"Error monitoring SMS: {ex.Message}");
-            }
-        }
-
-        // Stop monitoring SMS messages
-        public void StopSmsMonitoring()
-        {
-            isSmsMonitoringActive = false;
-            smsMonitoringThread?.Join(); // Wait for the monitoring thread to finish
-        }
-
-        // Delete a specific SMS message by index
-        public void DeleteSms(int messageIndex)
-        {
-            try
-            {
-                if (atPort?.IsOpen == false)
-                {
-                    atPort.Open(); // Ensure the AT port is open
-                }
-
-                SendCommand($"AT+CMGD={messageIndex}"); // Send the command to delete the message
-                if (verboseOutput) Console.WriteLine($"Deleted message at index {messageIndex}.");
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine($"Error deleting SMS message: {ex.Message}");
-            }
-        }
-
-        // Delete all stored SMS messages
-        public void DeleteAllSms()
-        {
-            try
-            {
-                if (atPort?.IsOpen == false)
-                {
-                    atPort.Open(); // Ensure the AT port is open
-                }
-
-                SendCommand("AT+CMGDA=\"DEL ALL\""); // Send the command to delete all messages
-                if (verboseOutput) Console.WriteLine("Deleted all SMS messages.");
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine($"Error deleting all SMS messages: {ex.Message}");
-            }
-        }
-
-        #endregion
-
         #region Utility Methods
 
         // Send an AT command through the serial port
@@ -569,7 +406,7 @@ namespace ModemTool
         }
 
         // Validate a phone number (simple validation)
-        private bool IsValidPhoneNumber(string? phoneNumber)
+        private static bool IsValidPhoneNumber(string? phoneNumber)
         {
             if (string.IsNullOrWhiteSpace(phoneNumber))
             {
@@ -580,7 +417,7 @@ namespace ModemTool
         }
 
         // Adjust the volume of an audio buffer by scaling the samples
-        private byte[] AdjustAudioVolume(byte[] buffer, int length, float volumeFactor)
+        private static byte[] AdjustAudioVolume(byte[] buffer, int length, float volumeFactor)
         {
             for (int i = 0; i < length; i += 2)
             {
@@ -610,15 +447,8 @@ namespace ModemTool
 
             if (disposing)
             {
-                StopSmsMonitoring(); // Stop SMS monitoring if active
-
-#if WINDOWS
                 waveIn?.Dispose(); // Dispose managed resources (Windows)
                 waveOut?.Dispose(); // Dispose managed resources (Windows)
-#elif LINUX
-                waveIn.Dispose(); // Dispose managed resources (Linux)
-                waveOut.Dispose(); // Dispose managed resources (Linux)
-#endif
 
                 // Close and dispose serial ports if they are open
                 if (atPort?.IsOpen == true)
