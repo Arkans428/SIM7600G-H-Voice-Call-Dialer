@@ -1,10 +1,10 @@
 # SIM7600G-H Modem Tool
 
-This project contains C# classes designed to manage audio streaming and serial communication with the SIMCOM SIM7600G-H modem.
+This project contains C# classes designed to manage audio streaming and serial communication with the SIMCOM SIM7600G-H modem. This is more Proof-of-concept than a robust commercial program.
 
 ## Overview
 
-**`SerialAudioPhone`**: Manages serial communication with the SIMCOM SIM7600G-H modem, handling AT commands and audio streaming for phone calls. It now also includes the ability to send DTMF tones during a call and platform-specific support for both Windows and Linux.
+**`SerialAudioPhone`**: Manages serial communication with the SIMCOM SIM7600G-H modem, handling AT commands and audio streaming for phone calls. It now also includes the ability to send DTMF tones during a call.
 
 ## Key Features
 
@@ -50,7 +50,7 @@ The `SerialAudioPhone` class is designed specifically for working with the SIMCO
 #### Key Features:
 - **NAudio**: Uses NAudio for audio input/output.
 - **Improved DTMF Tone Support**: The program now properly detects and sends all DTMF tones (including `*` and `#`) regardless of whether they are entered using Shift + 8/3 or the number pad.
-- **Automatic Port Detection**: The program automatically finds the correct serial ports for AT commands and audio, whether running on Windows or Linux.
+- **Automatic Port Detection**: The program automatically finds the correct serial ports for AT commands and audio.
 
 #### Usage Example:
 ```csharp
@@ -86,7 +86,7 @@ phone.StartCall("15005555555");
 
 ## Compatibility
 
-- The project is compatible with the SIMCOM SIM7600G-H modem and runs on both Windows and Linux systems with .NET Core (or later versions) installed.
+- The project is compatible with the SIMCOM SIM7600G-H modem and runs on Windows systems with .NET Core 8.0 (or later versions) installed.
 
 ## Contributing
 
