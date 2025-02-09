@@ -1,4 +1,4 @@
-# SIM7600G-H Modem Tool
+# SIM7600G-H Modem Voice Call Dialer
 
 This project contains C# classes designed to manage audio streaming and serial communication with the SIMCOM SIM7600G-H modem. This is more Proof-of-concept than a robust commercial program.
 
