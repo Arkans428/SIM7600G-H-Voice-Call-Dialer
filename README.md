@@ -8,9 +8,8 @@ This project contains C# classes designed to manage audio streaming and serial c
 
 ## Key Features
 
-- **SIMCOM SIM7600G-H Modem Integration**: Send AT commands over the AT Command Port and transmit/receive audio data over the serial audio port. The program can send DTMF tones during an active call, including the standard tones (0-9, *, #) and extended tones (A-D). The class also has methods to send, read, and delete SMS messages.
+- **SIMCOM SIM7600G-H Modem Integration**: Send AT commands over the AT Command Port and transmit/receive audio data over the serial audio port. The program can send DTMF tones during an active call, including the standard tones (0-9, *, #) and extended tones (A-D).
 - **DTMF Generation**: Sends all DTMF Tones from 0-9 and A-D.
-- **Send and Receive SMS**: Still a work in progress. 
 
 ## Hardware Requirements
 
@@ -51,13 +50,12 @@ The `SerialAudioPhone` class is designed specifically for working with the SIMCO
 #### Key Features:
 - **NAudio**: Uses NAudio for audio input/output.
 - **Improved DTMF Tone Support**: The program now properly detects and sends all DTMF tones (including `*` and `#`) regardless of whether they are entered using Shift + 8/3 or the number pad.
-- **SMS Management**: Send, read, and delete SMS messages using the modem’s serial port.
 - **Automatic Port Detection**: The program automatically finds the correct serial ports for AT commands and audio, whether running on Windows or Linux.
 
 #### Usage Example:
 ```csharp
 var phone = new SerialAudioPhone();
-phone.StartCall("17805555555");
+phone.StartCall("15005555555");
 ```
 
 ### Important Notes:
