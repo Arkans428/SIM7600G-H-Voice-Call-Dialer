@@ -67,7 +67,7 @@ phone.StartCall("15005555555");
 
 1. Clone this repository:
    ```bash
-   git clone https://github.com/Arkans428/SIM7600G-H-Serial-Audio.git
+   git clone https://github.com/Arkans428/SIM7600G-H-Voice-Call-Dialer.git
    ```
 2. Install dependencies:
    ```bash
