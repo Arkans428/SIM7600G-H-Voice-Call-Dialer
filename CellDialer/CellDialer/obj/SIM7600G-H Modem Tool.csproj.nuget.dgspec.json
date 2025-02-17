@@ -1,15 +1,15 @@
 {
   "format": 1,
   "restore": {
-    "C:\\Users\\Kiern\\source\\repos\\SIM7600G-H-Voice-Call-Dialer\\CellDialer\\CellDialer\\SIM7600G-H Modem Tool.csproj": {}
+    "C:\\Users\\Kiern\\Source\\Repos\\SIM7600G-H-Voice-Call-Dialer\\CellDialer\\CellDialer\\SIM7600G-H Modem Tool.csproj": {}
   },
   "projects": {
-    "C:\\Users\\Kiern\\source\\repos\\SIM7600G-H-Voice-Call-Dialer\\CellDialer\\CellDialer\\SIM7600G-H Modem Tool.csproj": {
+    "C:\\Users\\Kiern\\Source\\Repos\\SIM7600G-H-Voice-Call-Dialer\\CellDialer\\CellDialer\\SIM7600G-H Modem Tool.csproj": {
       "version": "1.0.0",
       "restore": {
-        "projectUniqueName": "C:\\Users\\Kiern\\source\\repos\\SIM7600G-H-Voice-Call-Dialer\\CellDialer\\CellDialer\\SIM7600G-H Modem Tool.csproj",
+        "projectUniqueName": "C:\\Users\\Kiern\\Source\\Repos\\SIM7600G-H-Voice-Call-Dialer\\CellDialer\\CellDialer\\SIM7600G-H Modem Tool.csproj",
         "projectName": "SIM7600G-H Modem Tool",
-        "projectPath": "C:\\Users\\Kiern\\source\\repos\\SIM7600G-H-Voice-Call-Dialer\\CellDialer\\CellDialer\\SIM7600G-H Modem Tool.csproj",
+        "projectPath": "C:\\Users\\Kiern\\Source\\Repos\\SIM7600G-H-Voice-Call-Dialer\\CellDialer\\CellDialer\\SIM7600G-H Modem Tool.csproj",
         "packagesPath": "C:\\Users\\Kiern\\.nuget\\packages\\",
         "outputPath": "C:\\Users\\Kiern\\Source\\Repos\\SIM7600G-H-Voice-Call-Dialer\\CellDialer\\CellDialer\\obj\\",
         "projectStyle": "PackageReference",

@@ -54,6 +54,7 @@ namespace ModemDialer
         #endregion
 
         #region Constructor
+        
         [SupportedOSPlatform("windows")]
         public SerialAudioPhone(int baudRate = 115200, int sampleRate = 8000, int channels = 1, bool verbose = false)
         {
@@ -118,48 +119,7 @@ namespace ModemDialer
         }
 
         #endregion
-
-        #region Platform-Specific Methods for Serial Port Detection
-
-        // Find the appropriate serial ports for Windows systems
-        [SupportedOSPlatform("windows")]
-        private static (string? AtPort, string? AudioPort) FindPortsWindows()
-        {
-            string? atPort = null;
-            string? audioPort = null;
-
-            try
-            {
-                // Query the system for USB devices using WMI (Windows Management Instrumentation)
-                using var searcher = new ManagementObjectSearcher("SELECT * FROM Win32_PnPEntity");
-                
-                foreach (var device in searcher.Get())
-                {
-                    string? deviceId = device["DeviceID"]?.ToString();
-                    string? name = device["Name"]?.ToString();
-                    if (deviceId != null && name != null)
-                    {
-                        if (deviceId.Contains(WindowsAtPortDeviceId))
-                        {
-                            atPort = name.Split('(').LastOrDefault()?.Replace(")", ""); // Extract COM port name for AT port
-                        }
-                        else if (deviceId.Contains(WindowsAudioPortDeviceId))
-                        {
-                            audioPort = name.Split('(').LastOrDefault()?.Replace(")", ""); // Extract COM port name for Audio port
-                        }
-                    }
-                }
-                
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine($"Error detecting ports on Windows: {ex.Message}");
-            }
-
-            return (atPort, audioPort);
-        }       
-
-        #endregion
+               
 
         #region Core Call Management Methods
 
@@ -380,6 +340,44 @@ namespace ModemDialer
         #endregion
 
         #region Utility Methods
+
+        // Find the appropriate serial ports for Windows systems
+        [SupportedOSPlatform("windows")]
+        private static (string? AtPort, string? AudioPort) FindPortsWindows()
+        {
+            string? atPort = null;
+            string? audioPort = null;
+
+            try
+            {
+                // Query the system for USB devices using WMI (Windows Management Instrumentation)
+                using var searcher = new ManagementObjectSearcher("SELECT * FROM Win32_PnPEntity");
+
+                foreach (var device in searcher.Get())
+                {
+                    string? deviceId = device["DeviceID"]?.ToString();
+                    string? name = device["Name"]?.ToString();
+                    if (deviceId != null && name != null)
+                    {
+                        if (deviceId.Contains(WindowsAtPortDeviceId))
+                        {
+                            atPort = name.Split('(').LastOrDefault()?.Replace(")", ""); // Extract COM port name for AT port
+                        }
+                        else if (deviceId.Contains(WindowsAudioPortDeviceId))
+                        {
+                            audioPort = name.Split('(').LastOrDefault()?.Replace(")", ""); // Extract COM port name for Audio port
+                        }
+                    }
+                }
+
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error detecting ports on Windows: {ex.Message}");
+            }
+
+            return (atPort, audioPort);
+        }
 
         // Send an AT command through the serial port
         private void SendCommand(string command)
