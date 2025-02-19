@@ -1,4 +1,3 @@
-using System;
 using System.Runtime.Versioning;
 
 namespace ModemDialer
@@ -32,8 +31,9 @@ namespace ModemDialer
                     // Display menu options to the user
                     Console.WriteLine("======SIM7600G-H Modem Tool======");
                     Console.WriteLine("Choose an option:");                  
-                    Console.WriteLine("1. Serial Audio Phone Call");
-                    Console.WriteLine("2. Exit");
+                    Console.WriteLine("1. Place Audio Phone Call");
+                    Console.WriteLine("2. Answer incoming Call");
+                    Console.WriteLine("3. Exit");
                     Console.Write("Enter your choice: ");
 
                     // Read user input
@@ -46,6 +46,9 @@ namespace ModemDialer
                             SerialAudioPhoneCall(phone);
                             break;
                         case "2":
+                            phone.AnswerCall();
+                            return;
+                        case "3":
                             // Properly dispose of resources before exiting
                             phone.Dispose();
                             Console.WriteLine("Exiting...");

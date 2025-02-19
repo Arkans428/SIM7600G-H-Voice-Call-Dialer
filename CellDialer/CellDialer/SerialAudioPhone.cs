@@ -1,27 +1,3 @@
-/*
-MIT License
-
-Copyright (c) 2024 Kiernan Verhagen
-
-Permission is hereby granted, free of charge, to any person obtaining a copy
-of this software and associated documentation files (the "Software"), to deal
-in the Software without restriction, including without limitation the rights
-to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-copies of the Software, and to permit persons to whom the Software is
-furnished to do so, subject to the following conditions:
-
-The above copyright notice and this permission notice shall be included in all
-copies or substantial portions of the Software.
-
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-SOFTWARE.
-*/
-
 using System.IO.Ports;
 using System.Management;
 using System.Runtime.Versioning;
@@ -73,6 +49,18 @@ namespace ModemDialer
             // Initialize the serial ports using the detected port names
             atPort = new SerialPort(atPortName, baudRate);
             audioPort = new SerialPort(audioPortName, baudRate);
+
+            try
+            {
+                atPort.Open();
+                audioPort.Open();
+                Console.WriteLine($"AT Port opened on {atPortName}");
+                Console.WriteLine($"Audio Port opened on {audioPortName}");
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error opening serial ports: {ex.Message}");
+            }
 
             // Configure the input device for capturing audio (microphone) on Windows
             waveIn = new WaveInEvent
@@ -157,82 +145,8 @@ namespace ModemDialer
 
                 Thread.Sleep(300); // Short delay to ensure the ports are fully initialized
 
-                // Send necessary AT commands to configure the call settings
-                SendCommand("AT+CGREG=0"); // Disable automatic gain control
-                SendCommand("AT+CECM=7");
-                SendCommand("AT+CECWB=0x0800");
-                SendCommand("AT+CMICGAIN=5"); // Set microphone gain
-                SendCommand("AT+COUTGAIN=4"); // Set output gain
-                SendCommand("AT+CNSN=0x1000");
-
-                // Send basic AT command to ensure modem readiness and then dial the phone number
-                SendCommand("AT");
-                SendCommand($"ATD{phoneNumber};"); // Dial the phone number
-
-                // Enable audio transmission over the serial port
-                SendCommand("AT+CPCMREG=1");
-
-                waveIn?.StartRecording(); // Start capturing audio from the microphone
-                waveOut?.Play(); // Start playing received audio
-
-                // Start a thread to monitor keyboard input for user interaction
-                Thread inputThread = new(MonitorKeyboardInput)
-                {
-                    Priority = ThreadPriority.Highest
-                };
-                inputThread.Start();
-
-                // Main loop to manage call activity
-                while (isCallActive)
-                {
-                    try
-                    {
-                        // Check for responses from the AT command port (e.g., "NO CARRIER" indicating the call ended)
-                        if (atPort != null && atPort.BytesToRead > 0)
-                        {
-                            string response = atPort.ReadExisting();
-                            if (verboseOutput) Console.WriteLine(response);
-                            if (response.Contains("NO CARRIER"))
-                            {
-                                isCallActive = false;
-                            }
-                        }
-
-                        // Read and play incoming audio data from the audio port
-                        if (audioPort != null && audioPort.BytesToRead > 0)
-                        {
-                            byte[] audioData = new byte[audioPort.BytesToRead];
-                            audioPort.Read(audioData, 0, audioData.Length);
-
-                            // Prevent buffer overflow by limiting the amount of buffered audio
-                            if (buffer != null && buffer.BufferedDuration.TotalMilliseconds < 100)
-                            {
-                                buffer.AddSamples(audioData, 0, audioData.Length); // Add received audio to the playback buffer
-                            }
-                            else
-                            {
-                                if (verboseOutput) Console.WriteLine("Skipping audio data to avoid buffer overflow.");
-                            }
-                        }
-                    }
-                    catch (IOException ex)
-                    {
-                        Console.WriteLine("I/O Error during call handling: " + ex.Message);
-                        isCallActive = false;
-                    }
-                    catch (UnauthorizedAccessException ex)
-                    {
-                        Console.WriteLine("Access Error during call handling: " + ex.Message);
-                        isCallActive = false;
-                    }
-                    catch (Exception ex)
-                    {
-                        Console.WriteLine("Unexpected Error during call handling: " + ex.Message);
-                        isCallActive = false;
-                    }
-
-                    Thread.Sleep(10); // Short delay to reduce CPU usage while maintaining low latency
-                }
+                // Place the call
+                PhoneLineControl($"ATD{phoneNumber};");
             }
             catch (Exception ex)
             {
@@ -241,6 +155,126 @@ namespace ModemDialer
             finally
             {
                 EndCall(); // Ensure the call is properly ended and resources are released
+            }
+        }
+
+        // Answer an incoming call
+        public void AnswerCall()
+        {
+            try
+            {
+                isCallActive = true; // Set the call as active
+
+                // Open the AT command port if it's not already open
+                if (atPort?.IsOpen == false)
+                {
+                    atPort.Open();
+                }
+
+                // Open the audio port if it's not already open
+                if (audioPort?.IsOpen == false)
+                {
+                    audioPort.Open();
+                }
+
+                // Clear any leftover data in the serial buffers before starting the call
+                // atPort?.DiscardInBuffer();
+                // atPort?.DiscardOutBuffer();
+                audioPort?.DiscardInBuffer();
+                audioPort?.DiscardOutBuffer();
+
+                Thread.Sleep(300); // Short delay to ensure the ports are fully initialized
+
+                // Answer the call
+                PhoneLineControl("ATA");
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine("Error answering the call: " + ex.Message);
+            }
+            finally
+            {
+                EndCall(); // Ensure the call is properly ended and resources are released
+            }
+        }
+
+        public void PhoneLineControl(string command)
+        {
+            // Configuration
+            // Send necessary AT commands to configure the call settings   
+            SendCommand("AT+CGREG=0"); // Disable automatic gain control
+            SendCommand("AT+CECM=7");
+            SendCommand("AT+CECWB=0x0800");
+            SendCommand("AT+CMICGAIN=5"); // Set microphone gain
+            SendCommand("AT+COUTGAIN=4"); // Set output gain
+            SendCommand("AT+CNSN=0x1000");
+
+            SendCommand(command); // This should be either dialing a number (ATD777777777;) or answering a call (ATA)
+
+            // Enable audio transmission over the serial port
+            SendCommand("AT+CPCMREG=1");
+
+            waveIn?.StartRecording(); // Start capturing audio from the microphone
+            waveOut?.Play(); // Start playing received audio
+
+            // Start a thread to monitor keyboard input for user interaction
+            Thread inputThread = new(MonitorKeyboardInput)
+            {
+                Priority = ThreadPriority.Highest
+            };
+            inputThread.Start();
+
+            // Main loop to manage call activity
+            while (isCallActive)
+            {
+                try
+                {
+                    // Check if the call is still active
+                    if (atPort != null && atPort.BytesToRead > 0)
+                    {
+                        string response = atPort.ReadExisting();
+                        if (verboseOutput) Console.WriteLine(response);
+
+                        // If modem says "NO CARRIER", exit loop
+                        if (response.Contains("NO CARRIER") || response.Contains("BUSY") || response.Contains("ERROR"))
+                        {
+                            Console.WriteLine("Call Ended by Remote.");
+                            isCallActive = false;
+                        }
+                    }
+
+                    // Read and play incoming audio data from the audio port
+                    if (audioPort != null && audioPort.BytesToRead > 0)
+                    {
+                        byte[] audioData = new byte[audioPort.BytesToRead];
+                        audioPort.Read(audioData, 0, audioData.Length);
+
+                        // Check if buffer is full, and remove old audio before adding new data
+                        if (buffer?.BufferedDuration.TotalMilliseconds >= 100)
+                        {
+                            if (verboseOutput) Console.WriteLine("Buffer full, removing old audio to avoid overflow.");
+                            buffer.ClearBuffer();  // This removes old audio before adding new samples
+                        }
+                        buffer?.AddSamples(audioData, 0, audioData.Length);
+                    }
+
+                    Thread.Sleep(10); // Short delay to reduce CPU usage while maintaining low latency
+                }
+                catch (IOException ex)
+                {
+                    Console.WriteLine("I/O Error during call handling: " + ex.Message);
+                    isCallActive = false;
+                }
+                catch (UnauthorizedAccessException ex)
+                {
+                    Console.WriteLine("Access Error during call handling: " + ex.Message);
+                    isCallActive = false;
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine("Unexpected Error during call handling: " + ex.Message);
+                    isCallActive = false;
+                }
             }
         }
 
