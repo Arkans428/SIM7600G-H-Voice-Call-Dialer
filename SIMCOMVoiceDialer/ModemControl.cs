@@ -4,16 +4,19 @@ using System.Threading;
 
 namespace SIMCOMVoiceDialer
 {
+    // Handles AT command communication with the modem over a serial port
     public class ModemControl : IDisposable
     {
-        private readonly string atPortName;
-        private readonly int baudRate;
-        private SerialPort atPort;
-        private bool disposed;
-        private readonly bool verboseOutput;
+        private readonly string atPortName;          // Name of the serial port to communicate with the modem (e.g., COM3)
+        private readonly int baudRate;               // Baud rate for serial communication (e.g., 115200)
+        private SerialPort atPort;                   // The actual serial port object
+        private bool disposed;                       // Tracks whether the object has been disposed
+        private readonly bool verboseOutput;         // Enables extra logging if true
 
+        // Event triggered when a response is received from the modem
         public event Action<string> OnModemResponse;
 
+        // Constructor initializes port configuration and verbosity
         public ModemControl(string atPortName, int baudRate, bool verbose = false)
         {
             this.atPortName = atPortName;
@@ -21,19 +24,20 @@ namespace SIMCOMVoiceDialer
             this.verboseOutput = verbose;
         }
 
+        // Opens and initializes the serial port connection
         public void OpenPort()
         {
             if (atPort == null)
             {
                 atPort = new SerialPort(atPortName, baudRate);
-                atPort.DataReceived += AtPortDataReceived;
+                atPort.DataReceived += AtPortDataReceived; // Register data receive event handler
             }
 
             if (!atPort.IsOpen)
             {
                 try
                 {
-                    atPort.Open();
+                    atPort.Open(); // Attempt to open the port
                     if (verboseOutput) Console.WriteLine($"AT Port opened on {atPortName}");
                 }
                 catch (Exception ex)
@@ -45,15 +49,16 @@ namespace SIMCOMVoiceDialer
             }
         }
 
+        // Handles incoming data from the modem
         private void AtPortDataReceived(object sender, SerialDataReceivedEventArgs e)
         {
             try
             {
-                string response = atPort.ReadExisting();
+                string response = atPort.ReadExisting(); // Read available data
                 if (!string.IsNullOrEmpty(response))
                 {
                     if (verboseOutput) Console.WriteLine($"[Modem] {response}");
-                    OnModemResponse?.Invoke(response);
+                    OnModemResponse?.Invoke(response); // Raise event with received data
                 }
             }
             catch (Exception ex)
@@ -62,6 +67,7 @@ namespace SIMCOMVoiceDialer
             }
         }
 
+        // Closes the serial port if it's open
         public void ClosePort()
         {
             if (atPort != null && atPort.IsOpen)
@@ -70,6 +76,7 @@ namespace SIMCOMVoiceDialer
             }
         }
 
+        // Sends an AT command to the modem
         public void SendCommand(string command)
         {
             if (atPort == null || !atPort.IsOpen)
@@ -79,8 +86,8 @@ namespace SIMCOMVoiceDialer
             }
             try
             {
-                atPort.WriteLine($"{command}\r");
-                Thread.Sleep(800); // small delay for command processing
+                atPort.WriteLine($"{command}\r"); // Write command with carriage return
+                Thread.Sleep(800); // Short delay to allow command processing
                 if (verboseOutput) Console.WriteLine($"Sent Command: {command}");
             }
             catch (Exception ex)
@@ -89,9 +96,9 @@ namespace SIMCOMVoiceDialer
             }
         }
 
+        // Sends raw data to the modem without appending carriage return or line feed
         public void WriteRaw(string data)
         {
-            // Check if the port is open before trying to write
             if (atPort == null || !atPort.IsOpen)
             {
                 Console.WriteLine("AT port is not open. Cannot write raw data.");
@@ -100,13 +107,11 @@ namespace SIMCOMVoiceDialer
 
             try
             {
-                // Write exactly the provided data to the serial port (no extra CR/LF)
-                atPort.Write(data);
+                atPort.Write(data); // Write raw bytes or characters directly
 
-                // Optional: Log what was written if verbose output is enabled
                 if (verboseOutput)
                 {
-                    // Use a helper to make control characters (e.g. Ctrl+Z) visible in logs
+                    // Show escaped version of non-printable characters
                     Console.WriteLine($"[ModemControl Raw TX] {EscapeNonPrintable(data)}");
                 }
             }
@@ -117,8 +122,8 @@ namespace SIMCOMVoiceDialer
         }
 
         /// <summary>
-        /// A helper to make control characters visible in logs.
-        /// For example, ASCII 26 (Ctrl+Z) will appear as "<CTRL+Z>" in console output.
+        /// Replaces control characters in strings with readable tags (e.g., Ctrl+Z becomes <CTRL+Z>).
+        /// This helps when logging command sequences or binary data.
         /// </summary>
         private string EscapeNonPrintable(string input)
         {
@@ -128,47 +133,52 @@ namespace SIMCOMVoiceDialer
                 .Replace("\n", "<LF>");
         }
 
-
+        // Sends a dial command to the modem for voice call
         public void Dial(string phoneNumber)
         {
-            SendCommand($"ATD{phoneNumber};");
-            SendCommand("AT+CPCMREG=1");
+            SendCommand($"ATD{phoneNumber};");    // AT dial command (with semicolon for voice)
+            SendCommand("AT+CPCMREG=1");          // Enable PCM interface (audio)
         }
 
+        // Answers an incoming call
         public void Answer()
         {
-            SendCommand("ATA");
-            SendCommand("AT+CPCMREG=1");
+            SendCommand("ATA");                   // Answer call
+            SendCommand("AT+CPCMREG=1");          // Enable PCM interface
         }
 
+        // Hangs up the active call
         public void HangUp()
         {
-            SendCommand("AT+CHUP");
-            SendCommand("AT+CPCMREG=0,1");
+            SendCommand("AT+CHUP");               // Hang up command
+            SendCommand("AT+CPCMREG=0,1");        // Disable PCM interface
         }
 
+        // Clears serial port input and output buffers to prevent old data from being processed
         public void ClearPortBuffers()
         {
             if (atPort != null && atPort.IsOpen)
             {
-                atPort.DiscardInBuffer();
-                atPort.DiscardOutBuffer();
+                atPort.DiscardInBuffer();         // Clear input buffer
+                atPort.DiscardOutBuffer();        // Clear output buffer
             }
         }
 
+        // Implements IDisposable to release resources cleanly
         public void Dispose()
         {
             Dispose(true);
-            GC.SuppressFinalize(this);
+            GC.SuppressFinalize(this);            // Prevents finalizer from running
         }
 
+        // Handles cleanup logic
         protected virtual void Dispose(bool disposing)
         {
             if (disposed) return;
             if (disposing)
             {
-                ClosePort();
-                atPort?.Dispose();
+                ClosePort();                      // Close port gracefully
+                atPort?.Dispose();                // Dispose of the serial port object
             }
             disposed = true;
         }
